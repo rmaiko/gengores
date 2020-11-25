@@ -176,12 +176,28 @@ def generate_airfoil_data(conf, airfoil_data):
     
     X = x * scale * 1e3
     Y = y_tilde(x) * scale * 1e3
-    L = 2 * np.pi * Y
     
-    t = np.cumsum(np.sqrt(np.diff(X)**2 + np.diff(Y)**2))
-    t = np.hstack((0,t))
+    return X, Y
+
+def generate_gore_coords(conf, X, Y):
+    nb_gores = conf["nb_gores"]
     
-    return X, Y, t, L
+    dX = np.diff(X)
+    dY = np.diff(Y)
+    
+    dt = np.sqrt(dX**2 + dY**2)
+    
+    alpha = 2 * np.pi * dY / dt 
+    
+    X_gore = X[0] + np.cumsum(dt * np.cos(alpha / (2 * nb_gores)))
+    Y_gore = Y[0] + np.cumsum(dt * np.sin(alpha / (2 * nb_gores)))
+    
+    X_gore = np.hstack([X[0], X_gore])
+    Y_gore = np.hstack([Y[0], Y_gore])
+    
+    return X_gore, Y_gore
+    
+    
 
 def cmd_arguments():
     parser = argparse.ArgumentParser(description="Generate airship gores based on an XFOIL shape")
@@ -226,7 +242,9 @@ if __name__ == "__main__":
     
     airfoil_data = read_xfoil(conf["airfoil_input"])
     
-    X, Y, t, L = generate_airfoil_data(conf, airfoil_data)
+    X, Y = generate_airfoil_data(conf, airfoil_data)
+    
+    X_gore, Y_gore = generate_gore_coords(conf, X, Y)
     
     dwg = setup_page(conf)
     
@@ -249,8 +267,8 @@ if __name__ == "__main__":
         hook_x += np.max(Y) + conf["cutting_clearance_mm"]
 
     for n_gores in conf["nb_gores_drawing"] * [conf["nb_gores"]]:
-        hook_x += np.max(L / (2*n_gores))
-        plot_airfoil(dwg, t, L/(2*n_gores),
+        hook_x += np.max(Y_gore)
+        plot_airfoil(dwg, X_gore, Y_gore,
              le_position              = (hook_x, hook_y),
              color                    = conf["solid_lines_color"],
              draw_centerline          = conf["draw_centerline"],
@@ -259,6 +277,6 @@ if __name__ == "__main__":
              length_lines_pitch_mm    = conf["length_lines_pitch_mm"],
              construction_lines_width = conf["construction_lines_width"],
              solid_lines_width        = conf["solid_lines_width"])
-        hook_x += np.max(L / (2*n_gores)) + conf["cutting_clearance_mm"]
+        hook_x += np.max(Y_gore) + conf["cutting_clearance_mm"]
         
     dwg.save()

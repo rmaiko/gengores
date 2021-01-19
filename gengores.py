@@ -49,6 +49,8 @@ def write_default_config_file(tofile = True):
         "draw_airfoil_name"         : True,
         "name_font_size"            : 20,
         "draw_centerline"           : True,
+        "draw_parallel_lines"       : True,
+        "parallel_lines_pitch_mm"   : 100,
         "draw_length_lines"         : True,
         "length_lines_pitch_mm"     : 100,
         "construction_lines_width"  : 0.1,
@@ -115,6 +117,8 @@ def plot_airfoil(dwg, X, Y,
                  font_size_mm = 20,
                  color = "black",
                  draw_centerline = True,
+                 draw_parallel_lines = True,
+                 parallel_lines_pitch_mm = 100,
                  draw_length_lines = True,
                  draw_airfoil_name = True,
                  length_lines_pitch_mm = 100,
@@ -143,6 +147,19 @@ def plot_airfoil(dwg, X, Y,
                          end          = (centerline, le_offset + np.max(X) + 5),
                          stroke       = "grey",
                          stroke_width = construction_lines_width).dasharray([3,3]))
+        
+    if draw_parallel_lines:
+        offset = parallel_lines_pitch_mm
+        while offset <= w/2:
+            dwg.add(dwg.line(start        = (centerline + offset, le_offset - 5),
+                 end                      = (centerline + offset, le_offset + np.max(X) + 5),
+                 stroke       = "grey",
+                 stroke_width = construction_lines_width).dasharray([3,3]))
+            dwg.add(dwg.line(start        = (centerline - offset, le_offset - 5),
+                 end                      = (centerline - offset, le_offset + np.max(X) + 5),
+                 stroke       = "grey",
+                 stroke_width = construction_lines_width).dasharray([3,3]))
+            offset += parallel_lines_pitch_mm
     
     # We draw the base shape as two halves
     pts = np.transpose(np.vstack((centerline+Y,le_offset+X)))
@@ -254,29 +271,33 @@ if __name__ == "__main__":
     if conf["draw_base_airfoil"]:
         hook_x += np.max(Y)
         plot_airfoil(dwg, X, Y,
-                     le_position            = (hook_x, hook_y),
-                     airfoil_name           = conf["airfoil_name"],
-                     font_size_mm           = conf["name_font_size"],
-                     color                  = conf["solid_lines_color"],
-                     draw_centerline        = conf["draw_centerline"],
-                     draw_length_lines      = conf["draw_length_lines"],
-                     draw_airfoil_name      = conf["draw_airfoil_name"],
-                     length_lines_pitch_mm  = conf["length_lines_pitch_mm"],
-                     construction_lines_width = conf["construction_lines_width"],
-                     solid_lines_width      = conf["solid_lines_width"])
+                     le_position                = (hook_x, hook_y),
+                     airfoil_name               = conf["airfoil_name"],
+                     font_size_mm               = conf["name_font_size"],
+                     color                      = conf["solid_lines_color"],
+                     draw_centerline            = conf["draw_centerline"],
+                     draw_parallel_lines        = conf["draw_parallel_lines"],
+                     parallel_lines_pitch_mm    = conf["parallel_lines_pitch_mm"],
+                     draw_length_lines          = conf["draw_length_lines"],
+                     draw_airfoil_name          = conf["draw_airfoil_name"],
+                     length_lines_pitch_mm      = conf["length_lines_pitch_mm"],
+                     construction_lines_width   = conf["construction_lines_width"],
+                     solid_lines_width          = conf["solid_lines_width"])
         hook_x += np.max(Y) + conf["cutting_clearance_mm"]
 
     for n_gores in conf["nb_gores_drawing"] * [conf["nb_gores"]]:
         hook_x += np.max(Y_gore)
         plot_airfoil(dwg, X_gore, Y_gore,
-             le_position              = (hook_x, hook_y),
-             color                    = conf["solid_lines_color"],
-             draw_centerline          = conf["draw_centerline"],
-             draw_length_lines        = conf["draw_length_lines"],
-             draw_airfoil_name        = False,
-             length_lines_pitch_mm    = conf["length_lines_pitch_mm"],
-             construction_lines_width = conf["construction_lines_width"],
-             solid_lines_width        = conf["solid_lines_width"])
+             le_position                = (hook_x, hook_y),
+             color                      = conf["solid_lines_color"],
+             draw_centerline            = conf["draw_centerline"],
+             draw_parallel_lines        = conf["draw_parallel_lines"],
+             parallel_lines_pitch_mm    = conf["parallel_lines_pitch_mm"],
+             draw_length_lines          = conf["draw_length_lines"],
+             draw_airfoil_name          = False,
+             length_lines_pitch_mm      = conf["length_lines_pitch_mm"],
+             construction_lines_width   = conf["construction_lines_width"],
+             solid_lines_width          = conf["solid_lines_width"])
         hook_x += np.max(Y_gore) + conf["cutting_clearance_mm"]
         
     dwg.save()
